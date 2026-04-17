@@ -1,0 +1,76 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.app-header-mark {
+  width: 4px;
+  align-self: stretch;
+  min-height: 2.5rem;
+  border-radius: 2px;
+  background: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.app-header-tagline {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.header-stats {
+  display: flex;
+  gap: var(--space-5);
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.header-stats strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.header-stats-active {
+  color: var(--color-accent);
+}
+
+.header-stats-active strong {
+  color: var(--color-accent);
+}
+
+.header-user {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.header-user:hover {
+  color: var(--color-text);
+  border-color: #cfd2d8;
+}
