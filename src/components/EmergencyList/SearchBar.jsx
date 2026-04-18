@@ -1,16 +1,15 @@
-import "./EmergencyList.css";
-
-export function SearchBar({ value, onChange, placeholder = "Search by ID, location, guest name, phone…" }) {
+// src/components/EmergencyList/SearchBar.jsx
+export function SearchBar({ value, onChange }) {
   return (
-    <label className="field field--grow">
-      <span className="field-label">Search</span>
+    <div className="field field--grow">
+      <label className="field-label">Search</label>
       <input
         className="field-input"
         type="search"
+        placeholder="Location, type, reporter name…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
       />
-    </label>
+    </div>
   );
 }

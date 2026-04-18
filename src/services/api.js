@@ -1,147 +1,155 @@
 import {
-  collection,
-  doc,
-  getDoc,
-  onSnapshot,
-  orderBy,
-  query,
-  runTransaction,
-  serverTimestamp,
-  updateDoc,
+  collection, doc, getDoc, onSnapshot,
+  orderBy, query, runTransaction,
+  serverTimestamp, updateDoc, addDoc,
 } from "firebase/firestore";
-import { initFirestore } from "./firebaseConfig.js";
-import { EMERGENCY_STATUSES, EMERGENCY_TYPES, SEVERITY } from "../utils/constants.js";
+import { db } from "./firebaseConfig.js";
+import { SEVERITY, AUTHORITIES, DISPATCH_MAP } from "../utils/constants.js";
 
-const db = initFirestore();
-const emergenciesCol = collection(db, "emergencies");
+const COLLECTION = "distressCalls";
 
-function normalizeTimestamp(value) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  if (typeof value?.toDate === "function") return value.toDate().toISOString();
-  if (value instanceof Date) return value.toISOString();
+const TYPE_MAP = {
+  INJURY: "medical", MEDICAL: "medical",
+  FIRE: "fire", CRIME: "crime", DEATH: "death",
+  medical: "medical", fire: "fire", crime: "crime", death: "death",
+};
+
+function normalizeType(v)     { return TYPE_MAP[String(v ?? "").toUpperCase()] ?? "medical"; }
+function normalizeSeverity(v) { return String(v ?? "").toLowerCase() === "major" ? SEVERITY.MAJOR : SEVERITY.MINOR; }
+function normalizeStatus(v, completedAt) {
+  const s = String(v ?? "").toLowerCase();
+  if (s === "completed" || s === "resolved" || completedAt) return "resolved";
+  return "active";
+}
+function normalizeTimestamp(v) {
+  if (!v) return null;
+  if (typeof v === "string") return v;
+  if (typeof v?.toDate === "function") return v.toDate().toISOString();
+  if (v instanceof Date) return v.toISOString();
   return null;
 }
-
-function normalizeType(value) {
-  const t = String(value ?? "").toLowerCase();
-  if (Object.values(EMERGENCY_TYPES).includes(t)) return t;
-  return EMERGENCY_TYPES.MEDICAL;
+function normalizeAdditionalInfo(info) {
+  if (!info || typeof info !== "object") return { notes: "", reporterDetails: null };
+  return {
+    notes: String(info["Additional Details"] ?? ""),
+    reporterDetails: {
+      fullName:              String(info["Full Name"]                ?? ""),
+      age:                   String(info["Age"]                      ?? ""),
+      phone:                 String(info["Contact Number"]           ?? ""),
+      emergencyContactName:  String(info["Emergency Contact Name"]   ?? ""),
+      emergencyContactPhone: String(info["Emergency Contact Number"] ?? ""),
+    },
+  };
 }
 
-function normalizeSeverity(value) {
-  const s = String(value ?? "").toLowerCase();
-  return s === SEVERITY.MAJOR ? SEVERITY.MAJOR : SEVERITY.MINOR;
-}
-
-function normalizeStatus(value, resolvedAt) {
-  const status = String(value ?? "").toLowerCase();
-  if (status === EMERGENCY_STATUSES.RESOLVED || resolvedAt) return EMERGENCY_STATUSES.RESOLVED;
-  return EMERGENCY_STATUSES.ACTIVE;
-}
-
-function normalizeEmergency(snapshot) {
+export function normalizeEmergency(snapshot) {
   const data = snapshot.data() ?? {};
-  const createdAt = normalizeTimestamp(data.createdAt) ?? new Date().toISOString();
-  const resolvedAt = normalizeTimestamp(data.resolvedAt);
-  const severity = normalizeSeverity(data.severity);
-  const type = normalizeType(data.type);
-  const targetAuthorities = Array.isArray(data.targetAuthorities) ? data.targetAuthorities : [];
-  const assignment = data.assignment ?? null;
+  const { notes, reporterDetails } = normalizeAdditionalInfo(data.additionalInfo);
+  const createdAt  = normalizeTimestamp(data.timestamp)   ?? new Date().toISOString();
+  const resolvedAt = normalizeTimestamp(data.completedAt) ?? null;
+  const severity   = normalizeSeverity(data.severity);
+
+  const assignment = data.assignment
+    ? {
+        assignedTo:    data.assignment.assignedTo   ?? null,
+        acceptedAt:    normalizeTimestamp(data.assignment.acceptedAt),
+        authorityType: data.assignment.authorityType ?? null,
+        contactPhone:  data.assignment.contactPhone  ?? null,
+        contactName:   data.assignment.contactName   ?? null,
+        status:        data.assignment.status        ?? "accepted",
+      }
+    : data.assignedTo
+    ? { assignedTo: data.assignedTo, acceptedAt: normalizeTimestamp(data.acceptedAt),
+        authorityType: null, contactPhone: null, contactName: data.assignedTo, status: "accepted" }
+    : null;
 
   return {
-    id: data.id || snapshot.id,
-    type,
+    id:                  snapshot.id,
+    type:                normalizeType(data.type),
     severity,
-    status: normalizeStatus(data.status, resolvedAt),
-    location: data.location ?? data.address ?? "Unknown location",
-    additionalNotes: data.additionalNotes ?? data.notes ?? data.summary ?? "",
-    summary: data.summary ?? "",
-    authoritiesNotified: severity === SEVERITY.MAJOR || Boolean(data.authoritiesNotified),
+    status:              normalizeStatus(data.status, data.completedAt),
+    location:            data.location     ?? "Unknown location",
+    hotelName:           data.hotelName    ?? "",
+    hotelAddress:        data.hotelAddress ?? "",
+    additionalNotes:     notes,
+    reporterDetails,
+    authoritiesNotified: severity === SEVERITY.MAJOR && Boolean(data.authoritiesNotified),
+    targetAuthorities:   Array.isArray(data.targetAuthorities) ? data.targetAuthorities : [],
+    dispatchOpen:        data.dispatchOpen ?? false,
+    assignment,
     createdAt,
     resolvedAt,
-    reporterDetails: data.reporterDetails ?? null,
-    targetAuthorities,
-    assignment: assignment
-      ? {
-          assignedTo: assignment.assignedTo ?? null,
-          acceptedAt: normalizeTimestamp(assignment.acceptedAt),
-          authorityType: assignment.authorityType ?? null,
-          contactPhone: assignment.contactPhone ?? null,
-          contactName: assignment.contactName ?? null,
-          status: assignment.status ?? "accepted",
-        }
-      : null,
-    coordination: data.coordination ?? null,
-    escalationReason: data.escalationReason ?? null,
   };
 }
 
 export function subscribeToEmergencies(onData, onError) {
-  const q = query(emergenciesCol, orderBy("createdAt", "desc"));
-  return onSnapshot(
-    q,
-    (snap) => {
-      const list = snap.docs.map(normalizeEmergency);
-      onData(list);
-    },
-    (error) => {
-      if (onError) onError(error);
-    }
+  const q = query(collection(db, COLLECTION), orderBy("timestamp", "desc"));
+  return onSnapshot(q,
+    (snap) => onData(snap.docs.map(normalizeEmergency)),
+    (err)  => { if (onError) onError(err); }
+  );
+}
+
+export function subscribeToMessages(emergencyId, onData) {
+  const q = query(collection(db, COLLECTION, emergencyId, "messages"), orderBy("sentAt", "asc"));
+  return onSnapshot(q, (snap) =>
+    onData(snap.docs.map((d) => ({ id: d.id, ...d.data(), sentAt: normalizeTimestamp(d.data().sentAt) })))
   );
 }
 
 export async function fetchEmergencyById(id) {
-  const snapshot = await getDoc(doc(db, "emergencies", id));
-  if (!snapshot.exists()) return null;
-  return normalizeEmergency(snapshot);
+  const snap = await getDoc(doc(db, COLLECTION, id));
+  if (!snap.exists()) return null;
+  return normalizeEmergency(snap);
 }
 
 export async function resolveEmergency(emergencyId, resolvedBy = "hotel_emergency_team") {
-  await updateDoc(doc(db, "emergencies", emergencyId), {
-    status: EMERGENCY_STATUSES.RESOLVED,
-    resolvedAt: serverTimestamp(),
-    resolvedBy,
+  await updateDoc(doc(db, COLLECTION, emergencyId), {
+    status: "completed", completedAt: serverTimestamp(), resolvedBy,
   });
 }
 
-export async function acceptAuthorityDispatch(emergencyId, authority) {
-  const ref = doc(db, "emergencies", emergencyId);
-
-  return runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(ref);
-    if (!snapshot.exists()) {
-      throw new Error("Emergency case no longer exists.");
-    }
-
-    const data = snapshot.data() ?? {};
-    const status = String(data.status ?? "").toLowerCase();
-    if (status === EMERGENCY_STATUSES.RESOLVED) {
-      throw new Error("This emergency has already been resolved.");
-    }
-
-    const currentAssignment = data.assignment ?? null;
-    const alreadyAssigned = currentAssignment?.assignedTo && currentAssignment?.status === "accepted";
-    if (alreadyAssigned && currentAssignment.assignedTo !== authority.id) {
-      throw new Error("Dispatch already accepted by another authority.");
-    }
-
-    transaction.update(ref, {
-      assignment: {
-        assignedTo: authority.id,
-        authorityType: authority.type,
-        contactName: authority.contactName ?? null,
-        contactPhone: authority.contactPhone ?? null,
-        acceptedAt: serverTimestamp(),
-        status: "accepted",
-      },
-      dispatchOpen: false,
-      updatedAt: serverTimestamp(),
-    });
-
-    return {
-      assignedTo: authority.id,
-      authorityType: authority.type,
-    };
+export async function dispatchToAuthorities(emergencyId, emergencyType) {
+  const types   = DISPATCH_MAP[emergencyType] ?? [];
+  const matched = AUTHORITIES.filter((a) => types.includes(a.type));
+  const targetAuthorities = matched.map((a) => ({
+    id: a.id, name: a.name, type: a.type,
+    contactName: a.contactName, contactPhone: a.contactPhone, status: "pending",
+  }));
+  await updateDoc(doc(db, COLLECTION, emergencyId), {
+    targetAuthorities, dispatchOpen: true, authoritiesNotified: true,
   });
+  return targetAuthorities;
+}
+
+export async function acceptAuthorityDispatch(emergencyId, authority) {
+  const ref = doc(db, COLLECTION, emergencyId);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Emergency no longer exists.");
+    const data = snap.data() ?? {};
+    if (String(data.status ?? "").toLowerCase() === "completed") throw new Error("Already resolved.");
+    const cur = data.assignment ?? null;
+    if (cur?.assignedTo && cur.status === "accepted" && cur.assignedTo !== authority.id)
+      throw new Error("Already accepted by another authority.");
+    const updatedAuthorities = (data.targetAuthorities ?? []).map((a) => {
+      if (a.id === authority.id)     return { ...a, status: "accepted" };
+      if (a.type === authority.type) return { ...a, status: "declined" };
+      return a;
+    });
+    tx.update(ref, {
+      assignment: {
+        assignedTo: authority.id, authorityType: authority.type,
+        contactName: authority.contactName ?? null, contactPhone: authority.contactPhone ?? null,
+        acceptedAt: serverTimestamp(), status: "accepted",
+      },
+      assignedTo: authority.name, acceptedAt: serverTimestamp(),
+      targetAuthorities: updatedAuthorities, dispatchOpen: false,
+    });
+    return { assignedTo: authority.id };
+  });
+}
+
+export async function sendMessage(emergencyId, message) {
+  await addDoc(collection(db, COLLECTION, emergencyId, "messages"), { ...message, sentAt: serverTimestamp() });
 }

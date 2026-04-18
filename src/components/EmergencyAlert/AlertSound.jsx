@@ -1,35 +1,17 @@
+// src/components/EmergencyAlert/AlertSound.jsx
 import { useEffect, useRef } from "react";
 
-const ALERT_SRC = "/sounds/alert.mp3";
-
-/**
- * Loops or plays alert while `alertId` is set (priority popup open).
- * Stops and resets audio when `alertId` clears (e.g. acknowledge).
- */
 export function AlertSound({ alertId }) {
-  const ref = useRef(null);
-  const lastStartedId = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
-    const audio = ref.current;
-    if (!audio) return;
-
-    if (!alertId) {
-      audio.pause();
-      audio.currentTime = 0;
-      lastStartedId.current = null;
-      return;
-    }
-
-    if (alertId === lastStartedId.current) return;
-
-    lastStartedId.current = alertId;
-    audio.currentTime = 0;
+    if (!alertId) return;
+    const audio = new Audio("/sounds/alert.mp3");
     audio.loop = true;
-    audio.play().catch(() => {
-      /* autoplay blocked or missing asset */
-    });
+    audioRef.current = audio;
+    audio.play().catch(() => {});
+    return () => { audio.pause(); audio.currentTime = 0; };
   }, [alertId]);
 
-  return <audio ref={ref} src={ALERT_SRC} preload="auto" />;
+  return null;
 }

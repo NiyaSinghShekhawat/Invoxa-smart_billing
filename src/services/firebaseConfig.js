@@ -1,23 +1,20 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
-export const firebaseConfig = {
-  apiKey: "AIzaSyBPq8rFlgc79Dv19Atl3Bz9NKJvpgYAiQA",
-  authDomain: "rapid-crisis-response-41ef1.firebaseapp.com",
-  projectId: "rapid-crisis-response-41ef1",
-  storageBucket: "rapid-crisis-response-41ef1.firebasestorage.app",
-  messagingSenderId: "231140703724",
-  appId: "1:231140703724:web:3b7720c4973db8dd73d4c9",
+const firebaseConfig = {
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-export function initFirebase() {
-  if (!getApps().length) {
-    return initializeApp(firebaseConfig);
-  }
-
+function getFirebaseApp() {
+  if (!getApps().length) return initializeApp(firebaseConfig);
   return getApp();
 }
 
-export function initFirestore() {
-  return getFirestore(initFirebase());
-}
+export function initFirebase()  { return getFirebaseApp(); }
+export function initFirestore() { return getFirestore(getFirebaseApp()); }
+export const db = getFirestore(getFirebaseApp());

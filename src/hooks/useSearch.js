@@ -10,18 +10,14 @@ export function useSearch(items) {
     const q = query.trim().toLowerCase();
     if (!q) return items;
     return items.filter((e) => {
-      const id = String(e.id).toLowerCase();
-      const loc = formatLocation(e.location).toLowerCase();
-      const notes = String(e.additionalNotes ?? e.summary ?? "").toLowerCase();
-      const typeLabel = String(EMERGENCY_TYPE_LABELS[e.type] ?? e.type ?? "").toLowerCase();
+      const id       = String(e.id).toLowerCase();
+      const loc      = formatLocation(e.location).toLowerCase();
+      const notes    = String(e.additionalNotes ?? "").toLowerCase();
+      const hotel    = String(e.hotelName ?? "").toLowerCase();
+      const typeLabel= String(EMERGENCY_TYPE_LABELS[e.type] ?? "").toLowerCase();
       const reporter = reporterDetailsSearchBlob(e.reporterDetails);
-      return (
-        id.includes(q) ||
-        loc.includes(q) ||
-        notes.includes(q) ||
-        typeLabel.includes(q) ||
-        reporter.includes(q)
-      );
+      return id.includes(q) || loc.includes(q) || notes.includes(q)
+          || hotel.includes(q) || typeLabel.includes(q) || reporter.includes(q);
     });
   }, [items, query]);
 

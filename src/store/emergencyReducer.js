@@ -1,6 +1,7 @@
 export const initialEmergencyState = {
-  emergencies: [],
-  activeEmergencyId: null,
+  emergencies:       [],   // full list from Firestore
+  activeEmergencyId: null, // drives the alert popup
+  tab:               "live", // "live" | "history"
 };
 
 export function emergencyReducer(state, action) {
@@ -9,6 +10,8 @@ export function emergencyReducer(state, action) {
       return { ...state, emergencies: action.payload };
     case "SET_ACTIVE_EMERGENCY":
       return { ...state, activeEmergencyId: action.payload };
+    case "SET_TAB":
+      return { ...state, tab: action.payload };
     default:
       return state;
   }
