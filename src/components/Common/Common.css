@@ -40,6 +40,14 @@
   color: var(--color-text);
 }
 
+.status-indicator--active {
+  color: var(--color-accent);
+}
+
+.status-indicator--resolved {
+  color: var(--color-muted);
+}
+
 .timestamp {
   font-size: 0.85rem;
   color: var(--color-muted);
