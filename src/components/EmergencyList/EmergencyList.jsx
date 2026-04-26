@@ -4,8 +4,8 @@ import { useDashboard } from "../../store/DashboardContext.jsx";
 import { useFilters } from "../../hooks/useFilters.js";
 import { useSearch } from "../../hooks/useSearch.js";
 import { useActiveEmergency } from "../../hooks/useActiveEmergency.js";
-import { EMERGENCY_STATUSES } from "../../utils/constants.js";
-import { acceptAuthorityDispatch, resolveEmergency } from "../../services/api.js";
+import { EMERGENCY_STATUSES, SEVERITY } from "../../utils/constants.js";
+import { acceptAuthorityDispatch, resolveEmergency, updateReporterDetails } from "../../services/api.js";
 import { FilterBar } from "./FilterBar.jsx";
 import { SearchBar } from "./SearchBar.jsx";
 import { EmergencyCard } from "./EmergencyCard.jsx";
@@ -13,7 +13,7 @@ import { EmergencyDetail } from "./EmergencyDetail.jsx";
 
 export function EmergencyList({ loading }) {
   const { state } = useDashboard();
-  const { setActive } = useActiveEmergency();
+  const { setActive, active: activeEmergency } = useActiveEmergency();
   const { type, setType, status, setStatus, filtered } = useFilters(state.emergencies);
   const { query, setQuery, results } = useSearch(filtered);
   const [detail, setDetail] = useState(null);
@@ -31,6 +31,16 @@ export function EmergencyList({ loading }) {
 
   const splitOpen = Boolean(detail);
   const tabList = activeTab === "live" ? live : history;
+
+  const { minorList, majorList } = useMemo(() => {
+    const minor = [];
+    const major = [];
+    for (const e of tabList) {
+      if (e.severity === SEVERITY.MAJOR) major.push(e);
+      else minor.push(e);
+    }
+    return { minorList: minor, majorList: major };
+  }, [tabList]);
 
   useEffect(() => {
     if (!detail) return;
@@ -65,6 +75,10 @@ export function EmergencyList({ loading }) {
     } finally {
       setActionBusy(false);
     }
+  }
+
+  async function handleSaveReporterDetails(caseId, reporterDetails) {
+    await updateReporterDetails(caseId, reporterDetails);
   }
 
   return (
@@ -119,16 +133,45 @@ export function EmergencyList({ loading }) {
                   : "No past incidents in this view."}
               </p>
             ) : (
-              <div className={`emergency-grid${splitOpen ? " emergency-grid--with-panel" : ""}`}>
-                {tabList.map((item) => (
-                  <EmergencyCard
-                    key={item.id}
-                    item={item}
-                    selected={detail?.id === item.id}
-                    onSelect={setDetail}
-                    onAlert={(e) => setActive(e.id)}
-                  />
-                ))}
+              <div className="emergency-severity-columns">
+                <div className="emergency-column emergency-column--minor">
+                  <h4 className="emergency-column-title emergency-column-title--minor">Minor incidents</h4>
+                  {minorList.length === 0 ? (
+                    <p className="emergency-column-empty">No minor incidents in this view.</p>
+                  ) : (
+                    <div className={`emergency-grid emergency-grid--stacked${splitOpen ? " emergency-grid--with-panel" : ""}`}>
+                      {minorList.map((item) => (
+                        <EmergencyCard
+                          key={item.id}
+                          item={item}
+                          selected={detail?.id === item.id}
+                          onSelect={setDetail}
+                          onAlert={(e) => setActive(e.id)}
+                          highlightNewAlert={item.id === activeEmergency?.id}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="emergency-column emergency-column--major">
+                  <h4 className="emergency-column-title emergency-column-title--major">Major incidents</h4>
+                  {majorList.length === 0 ? (
+                    <p className="emergency-column-empty">No major incidents in this view.</p>
+                  ) : (
+                    <div className={`emergency-grid emergency-grid--stacked${splitOpen ? " emergency-grid--with-panel" : ""}`}>
+                      {majorList.map((item) => (
+                        <EmergencyCard
+                          key={item.id}
+                          item={item}
+                          selected={detail?.id === item.id}
+                          onSelect={setDetail}
+                          onAlert={(e) => setActive(e.id)}
+                          highlightNewAlert={item.id === activeEmergency?.id}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -141,6 +184,7 @@ export function EmergencyList({ loading }) {
               onClose={() => setDetail(null)}
               onResolve={handleResolve}
               onAcceptDispatch={handleAcceptDispatch}
+              onSaveReporterDetails={handleSaveReporterDetails}
               actionBusy={actionBusy}
               actionError={actionError}
             />

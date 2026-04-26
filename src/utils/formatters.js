@@ -14,14 +14,25 @@ export function formatTimestamp(isoString) {
   }
 }
 
+/**
+ * Human-readable relative time since `isoString` (updates well when re-rendered on an interval).
+ */
 export function formatTimeAgo(isoString) {
   if (!isoString) return "—";
-  const diff = Date.now() - new Date(isoString).getTime();
-  const mins  = Math.floor(diff / 60000);
+  const t = new Date(isoString).getTime();
+  if (Number.isNaN(t)) return "—";
+  const diff = Date.now() - t;
+  if (diff < 0) return "Just now";
+  const sec = Math.floor(diff / 1000);
+  const mins = Math.floor(sec / 60);
   const hours = Math.floor(mins / 60);
-  if (mins < 1)  return "Just now";
+  const days = Math.floor(hours / 24);
+  if (sec < 45) return "Just now";
+  if (mins < 1) return "< 1m ago";
   if (mins < 60) return `${mins}m ago`;
-  return `${hours}h ${mins % 60}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return formatTimestamp(isoString);
 }
 
 export function formatLocation(loc) {

@@ -5,6 +5,7 @@ import { Timestamp } from "../Common/Timestamp.jsx";
 import { formatLocation } from "../../utils/formatters.js";
 import { EMERGENCY_STATUSES, EMERGENCY_TYPE_LABELS, SEVERITY } from "../../utils/constants.js";
 import { ReporterDetailsBlock } from "./ReporterDetailsBlock.jsx";
+import { ReporterDetailsForm } from "./ReporterDetailsForm.jsx";
 
 function renderAuthorityLabel(authorityType) {
   if (authorityType === "police") return "Police";
@@ -13,7 +14,15 @@ function renderAuthorityLabel(authorityType) {
   return authorityType;
 }
 
-export function EmergencyDetail({ item, onClose, onResolve, onAcceptDispatch, actionBusy, actionError }) {
+export function EmergencyDetail({
+  item,
+  onClose,
+  onResolve,
+  onAcceptDispatch,
+  onSaveReporterDetails,
+  actionBusy,
+  actionError,
+}) {
   if (!item) return null;
 
   const typeLabel = EMERGENCY_TYPE_LABELS[item.type] ?? item.type;
@@ -23,7 +32,6 @@ export function EmergencyDetail({ item, onClose, onResolve, onAcceptDispatch, ac
   const authorities = Array.isArray(item.targetAuthorities) ? item.targetAuthorities : [];
   const assignment = item.assignment ?? null;
   const isAssigned = Boolean(assignment?.assignedTo);
-
   return (
     <div
       className="case-panel"
@@ -73,6 +81,11 @@ export function EmergencyDetail({ item, onClose, onResolve, onAcceptDispatch, ac
       )}
 
       <ReporterDetailsBlock reporterDetails={item.reporterDetails} />
+      <ReporterDetailsForm
+        emergencyId={item.id}
+        reporterDetails={item.reporterDetails}
+        onSave={onSaveReporterDetails}
+      />
 
       {showAuthorities && (
         <div className="detail-banner" role="status">

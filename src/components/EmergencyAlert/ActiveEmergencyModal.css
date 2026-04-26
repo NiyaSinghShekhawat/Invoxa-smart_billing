@@ -115,6 +115,10 @@
   margin-top: 0;
 }
 
+.active-emergency-modal-reporter .case-reporter-form-section {
+  margin-top: var(--space-3);
+}
+
 .active-emergency-ref-id {
   margin: 0 0 var(--space-2);
   font-weight: 700;

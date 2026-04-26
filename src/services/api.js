@@ -103,6 +103,30 @@ export async function fetchEmergencyById(id) {
   return normalizeEmergency(snap);
 }
 
+export async function updateReporterDetails(emergencyId, reporterDetails) {
+  const ref = doc(db, COLLECTION, emergencyId);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Emergency no longer exists.");
+    const data = snap.data() ?? {};
+    const currentInfo = data.additionalInfo && typeof data.additionalInfo === "object"
+      ? data.additionalInfo
+      : {};
+
+    const nextInfo = {
+      ...currentInfo,
+      "Full Name": String(reporterDetails?.fullName ?? "").trim(),
+      "Age": String(reporterDetails?.age ?? "").trim(),
+      "Contact Number": String(reporterDetails?.phone ?? "").trim(),
+      "Emergency Contact Name": String(reporterDetails?.emergencyContactName ?? "").trim(),
+      "Emergency Contact Number": String(reporterDetails?.emergencyContactPhone ?? "").trim(),
+    };
+
+    tx.update(ref, { additionalInfo: nextInfo });
+    return nextInfo;
+  });
+}
+
 export async function resolveEmergency(emergencyId, resolvedBy = "hotel_emergency_team") {
   await updateDoc(doc(db, COLLECTION, emergencyId), {
     status: "completed", completedAt: serverTimestamp(), resolvedBy,

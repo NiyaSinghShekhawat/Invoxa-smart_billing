@@ -214,20 +214,85 @@
   gap: var(--space-4);
 }
 
+/* Single-column list inside minor/major columns */
+.emergency-grid--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 @media (min-width: 640px) {
-  .emergency-grid {
+  .emergency-grid:not(.emergency-grid--stacked) {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 960px) {
-  .emergency-grid:not(.emergency-grid--with-panel) {
+  .emergency-grid:not(.emergency-grid--stacked):not(.emergency-grid--with-panel) {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .emergency-grid--with-panel {
+  .emergency-grid--with-panel:not(.emergency-grid--stacked) {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* Two severity columns (minor | major) */
+.emergency-severity-columns {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .emergency-severity-columns {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+}
+
+.emergency-column {
+  min-width: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
+.emergency-column--minor {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.emergency-column--major {
+  background: #fffafa;
+  border-color: rgba(200, 16, 46, 0.2);
+}
+
+.emergency-column-title {
+  margin: 0 0 var(--space-3);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.emergency-column-title--minor {
+  color: #475569;
+}
+
+.emergency-column-title--major {
+  color: var(--color-accent);
+}
+
+.emergency-column-empty {
+  margin: 0;
+  padding: var(--space-4);
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .emergency-card {
@@ -258,6 +323,37 @@
 .emergency-card--selected {
   border-color: var(--color-accent);
   box-shadow: var(--shadow-md), 0 0 0 1px rgba(200, 16, 46, 0.2);
+}
+
+/* Type accent line (hospital / police / fire / other) */
+.emergency-card--type-medical {
+  border-left: 4px solid #2563eb;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.08) 0%, var(--color-surface) 56px);
+}
+
+.emergency-card--type-fire {
+  border-left: 4px solid #ea580c;
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.1) 0%, var(--color-surface) 56px);
+}
+
+.emergency-card--type-crime {
+  border-left: 4px solid #312e81;
+  background: linear-gradient(90deg, rgba(49, 46, 129, 0.12) 0%, var(--color-surface) 56px);
+}
+
+.emergency-card--type-death {
+  border-left: 4px solid #57534e;
+  background: linear-gradient(90deg, rgba(87, 83, 78, 0.08) 0%, var(--color-surface) 56px);
+}
+
+/* New unacknowledged alert: subtle pulsing red glow (sound plays in parallel) */
+.emergency-card--new-alert {
+  animation: emergency-card-alert-glow 2s ease-in-out infinite;
+  border-color: rgba(200, 16, 46, 0.45);
+}
+
+.emergency-card--new-alert:hover {
+  animation: emergency-card-alert-glow 2s ease-in-out infinite;
 }
 
 .emergency-card-type-row {
@@ -338,9 +434,33 @@
   margin-top: var(--space-3);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.emergency-card-time-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  text-align: right;
+  min-width: 0;
+}
+
+.emergency-card-time-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+}
+
+.emergency-card-time {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
 }
 
 .emergency-card-flag {
@@ -469,6 +589,30 @@
 
 .case-reporter-section {
   margin-bottom: var(--space-4);
+}
+
+.case-reporter-form-section {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.case-reporter-form-hint {
+  margin: 0 0 var(--space-3);
+}
+
+.case-reporter-form {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.case-reporter-form-success {
+  margin: var(--space-2) 0 0;
+  color: #166534;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .case-dl {

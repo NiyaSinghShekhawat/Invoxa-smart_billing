@@ -5,6 +5,8 @@ import { formatLocation } from "../../utils/formatters.js";
 import { useActiveEmergency } from "../../hooks/useActiveEmergency.js";
 import { EMERGENCY_TYPE_LABELS, SEVERITY } from "../../utils/constants.js";
 import { ReporterDetailsBlock } from "../EmergencyList/ReporterDetailsBlock.jsx";
+import { ReporterDetailsForm } from "../EmergencyList/ReporterDetailsForm.jsx";
+import { updateReporterDetails } from "../../services/api.js";
 
 export function ActiveEmergencyModal({ emergency }) {
   const { clearActive } = useActiveEmergency();
@@ -54,6 +56,11 @@ export function ActiveEmergencyModal({ emergency }) {
 
         <div className="active-emergency-modal-reporter">
           <ReporterDetailsBlock reporterDetails={emergency.reporterDetails} />
+          <ReporterDetailsForm
+            emergencyId={emergency.id}
+            reporterDetails={emergency.reporterDetails}
+            onSave={updateReporterDetails}
+          />
         </div>
 
         <div className="active-emergency-detail-block">

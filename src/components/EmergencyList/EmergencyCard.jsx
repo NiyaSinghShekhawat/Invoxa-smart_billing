@@ -1,24 +1,35 @@
-import { useState } from "react";
 import { Badge } from "../Common/Badge.jsx";
 import { StatusIndicator } from "../Common/StatusIndicator.jsx";
-import { Timestamp } from "../Common/Timestamp.jsx";
+import { RelativeTime } from "../Common/RelativeTime.jsx";
 import { formatLocation } from "../../utils/formatters.js";
 import { EMERGENCY_TYPE_LABELS, SEVERITY } from "../../utils/constants.js";
 
+function normalizeTypeKey(type) {
+  const t = String(type ?? "medical").toLowerCase();
+  if (t === "medical" || t === "fire" || t === "crime" || t === "death") return t;
+  return "medical";
+}
+
 // Named export — matches how EmergencyList.jsx imports it: { EmergencyCard }
-export function EmergencyCard({ item, selected, onSelect, onAlert }) {
+export function EmergencyCard({ item, selected, onSelect, onAlert, highlightNewAlert }) {
   if (!item) return null;
 
-  const typeLabel = EMERGENCY_TYPE_LABELS[item.type] ?? item.type;
-  const isMajor   = item.severity === SEVERITY.MAJOR;
+  const typeKey = normalizeTypeKey(item.type);
+  const typeLabel = EMERGENCY_TYPE_LABELS[typeKey] ?? EMERGENCY_TYPE_LABELS[item.type] ?? item.type;
+  const isMajor = item.severity === SEVERITY.MAJOR;
   const isAssigned = !!item.assignment;
 
+  const cardClass = [
+    "emergency-card",
+    `emergency-card--type-${typeKey}`,
+    selected && "emergency-card--selected",
+    highlightNewAlert && "emergency-card--new-alert",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <button
-      type="button"
-      className={"emergency-card" + (selected ? " emergency-card--selected" : "")}
-      onClick={() => onSelect(item)}
-    >
+    <button type="button" className={cardClass} onClick={() => onSelect(item)}>
       <div className="emergency-card-type-row">
         <span className="emergency-card-type-label">{typeLabel}</span>
         <Badge variant={isMajor ? "major" : "minor"}>
@@ -40,7 +51,10 @@ export function EmergencyCard({ item, selected, onSelect, onAlert }) {
 
       <div className="emergency-card-meta">
         <StatusIndicator status={item.status} />
-        <Timestamp value={item.createdAt} />
+        <span className="emergency-card-time-block">
+          <span className="emergency-card-time-label">Registered</span>
+          <RelativeTime value={item.createdAt} className="emergency-card-time" />
+        </span>
       </div>
 
       {isMajor && !isAssigned && item.authoritiesNotified && (
