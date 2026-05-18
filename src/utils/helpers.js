@@ -1,5 +1,0 @@
-export function noop() {}
-
-export function clamp(n, min, max) {
-  return Math.min(max, Math.max(min, n));
-}
