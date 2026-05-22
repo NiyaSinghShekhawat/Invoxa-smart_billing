@@ -4,4 +4,4 @@ dist
 .env.local
 *.log
 .DS_Store
-src\\services\\supabase.js
+src/services/supabase.js

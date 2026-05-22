@@ -1,5 +1,5 @@
 -- ================================================================
---  BillFlow — Supabase Schema
+--  INVOXA — Supabase Schema
 --  Run this entire file in:
 --  Supabase Dashboard → SQL Editor → New Query → Run
 -- ================================================================
