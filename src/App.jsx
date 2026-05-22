@@ -17,12 +17,14 @@ export default function App() {
 
   const { settings, loading: settingsLoading, saveSettings } = useSettings(user?.id);
   const { stock, loading: stockLoading, addItem, deleteItem }  = useStock(user?.id);
-  const { invoices, saveInvoice, getInvoiceWithItems, deleteInvoice } = useInvoices(user?.id);
+  const { invoices, saveInvoice, getInvoiceWithItems, deleteInvoice, updatePayment } = useInvoices(user?.id);
 
   const [tab, setTab]               = useState("dashboard");
   const [view, setView]             = useState("list");   // "list" | "form" | "invoice"
   const [activeInvoice, setActiveInvoice] = useState(null);
   const [savingInvoice, setSavingInvoice] = useState(false);
+  
+  
 
   // ── Loading / Auth gates ────────────────────────────────────────────────────
   if (authLoading) {
@@ -85,10 +87,11 @@ export default function App() {
           </div>
           {[["dashboard","Dashboard"], ["trades","Trades"], ["stock","Stock"], ["settings","Settings"]].map(([key, label]) => (
             <button key={key} onClick={() => { setTab(key); setView("list"); }}
-              style={{ padding: "18px 18px", borderBottom: tab === key && view !== "form" && view !== "invoice" ? "2px solid #1a1a1a" : "2px solid transparent",
+              style={{ padding: "18px 18px",
+                borderBottom: tab === key && view === "list" ? "2px solid #1a1a1a" : "2px solid transparent",
+                borderTop: "none", borderLeft: "none", borderRight: "none",
                 color: tab === key ? "#1a1a1a" : "#888", fontWeight: tab === key ? 500 : 400,
-                cursor: "pointer", fontSize: 14, background: "none", border: "none",
-                borderBottom: tab === key && view === "list" ? "2px solid #1a1a1a" : "2px solid transparent" }}>
+                cursor: "pointer", fontSize: 14, background: "none" }}>
               {label}
             </button>
           ))}
@@ -121,10 +124,14 @@ export default function App() {
 
           {/* ── Trades & Analytics ── */}
           {tab === "trades" && (
+            // Pass it to TradesPanel
             <TradesPanel
+              settings={settings}
               invoices={invoices}
               onReopen={reopenInvoice}
               onDelete={deleteInvoice}
+              onGetInvoice={getInvoiceWithItems}
+              onPaymentUpdate={updatePayment}   // ← add this
             />
           )}
 

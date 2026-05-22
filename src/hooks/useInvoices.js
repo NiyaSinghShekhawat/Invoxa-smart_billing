@@ -201,23 +201,32 @@ export function useInvoices(userId) {
   }, [userId]);
 
   // Update payment status / received amount
-  const updatePayment = useCallback(async (invoiceId, receivedAmount) => {
-    const inv = invoices.find(i => i.id === invoiceId);
-    if (!inv) return;
-    const due = Math.max(0, inv.totalAmount - receivedAmount);
-    const status = due <= 0 ? "paid" : receivedAmount > 0 ? "partial" : "unpaid";
-
+  const updatePayment = useCallback(async (
+    invoiceId,
+    { received, due, status, notes }
+  ) => {
+  
     const { error } = await supabase
       .from("invoices")
-      .update({ received_amount: receivedAmount, due_amount: due, status })
+      .update({
+        received_amount: received,
+        due_amount: due,
+        status,
+        notes,
+      })
       .eq("id", invoiceId)
       .eq("user_id", userId);
-
+  
     if (error) throw new Error(error.message);
-    setInvoices(prev => prev.map(i =>
-      i.id === invoiceId ? { ...i, received: receivedAmount, due, status } : i
-    ));
-  }, [userId, invoices]);
-
-  return { invoices, loading, error, saveInvoice, getInvoiceWithItems, deleteInvoice, updatePayment };
+  
+    setInvoices(prev =>
+      prev.map(inv =>
+        inv.id === invoiceId
+          ? { ...inv, received, due, status, notes }
+          : inv
+      )
+    );
+  
+  }, [userId]);
+  return { invoices, saveInvoice, getInvoiceWithItems, deleteInvoice, updatePayment };
 }

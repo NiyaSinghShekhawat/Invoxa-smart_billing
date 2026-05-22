@@ -1,3 +1,4 @@
+import InvoiceDetailModal from "./InvoiceDetailModal";
 import { useState, useMemo } from "react";
 import { fmtINR } from "../utils/taxUtils";
 import { fmtDateDisplay } from "../utils/constants";
@@ -70,8 +71,9 @@ function DonutChart({ segments, size = 90 }) {
   );
 }
 
-export default function TradesPanel({ invoices, onReopen, onDelete }) {
+export default function TradesPanel({ settings, invoices, onReopen, onDelete, onGetInvoice, onPaymentUpdate }) {
   const [period, setPeriod]   = useState("This Month");
+  const [detailInvoice, setDetailInvoice] = useState(null);
   const [search, setSearch]   = useState("");
   const [sortBy, setSortBy]   = useState("date_desc");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -339,10 +341,21 @@ export default function TradesPanel({ invoices, onReopen, onDelete }) {
                   </td>
                   <td style={{ ...s.td, whiteSpace: "nowrap" }}>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => onReopen(inv.id)}
+                      {/* <button onClick={() => onReopen(inv.id)}
                         style={{ padding: "5px 10px", background: "#dbeafe", color: "#1d4ed8", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 500 }}>
                         View
-                      </button>
+                      </button> */}
+                      <button onClick={async () => {
+                            try {
+                            const full = await onGetInvoice(inv.id);
+                            setDetailInvoice({ ...full, settings });
+                            } catch (e) {
+                            alert("Error loading invoice: " + e.message);
+                            }
+                        }}
+                        style={{ padding: "5px 10px", background: "#dbeafe", color: "#1d4ed8", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 500 }}>
+                        View
+                        </button>
                       <button onClick={() => setConfirmDelete(inv.id)}
                         style={{ padding: "5px 10px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 500 }}>
                         Delete
@@ -367,6 +380,18 @@ export default function TradesPanel({ invoices, onReopen, onDelete }) {
           </div>
         )}
       </div>
+
+      {detailInvoice && (
+        <InvoiceDetailModal
+            invoice={detailInvoice}
+            onClose={() => setDetailInvoice(null)}
+            onPaymentUpdate={async (id, data) => {
+            await onPaymentUpdate(id, data);
+            const updated = await onGetInvoice(id);
+            setDetailInvoice({ ...updated, settings });
+            }}
+        />
+        )}
 
       {/* ── Delete Confirm Modal ── */}
       {confirmDelete && (
