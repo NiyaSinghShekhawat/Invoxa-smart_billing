@@ -4,7 +4,7 @@
 Invoxa is a modern smart billing and invoice management application built for businesses, freelancers, and shop owners who need fast GST-compliant invoice generation, inventory management, payment tracking, and professional billing workflows.
 
 Built with a modern React + Supabase stack, Invoxa focuses on simplicity, speed, and real-world usability.
-
+[Try Invoxa](https://invoxa-one.vercel.app/)
 ---
 
 ## ✨ Features
